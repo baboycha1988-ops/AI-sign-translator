@@ -1,0 +1,46 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# data and models: NEVER commit recordings, landmarks of real people or trained artifacts
+data/
+datasets/
+recordings/
+uploads/
+*.mp4
+*.webm
+*.mov
+*.avi
+*.npz
+*.onnx
+*.pt
+*.pth
+*.task
+*.tflite
+
+# docker volumes / logs
+dbdata/
+*.log
+node_modules/
+.next/

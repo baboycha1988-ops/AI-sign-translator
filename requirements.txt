@@ -1,0 +1,4 @@
+# Everything needed to run ALL tests locally (API + ML core).
+# Versions are lower bounds only; they were not pinned against a fresh install.
+-r apps/api/requirements.txt
+-r packages/ml/requirements.txt
