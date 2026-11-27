@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Sign Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap">
+<style>
+:root{
+  --bg:#f4f6fa;--surface:#fff;--ink:#14213a;--muted:#5b6679;--line:#d9dfea;
+  --lapis:#1f4e8c;--lapis-ink:#fff;--saffron:#f2b230;--warn:#a8324a;
+  --sub:32px;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1626;--surface:#16233a;--ink:#eef2f9;--muted:#9fb0c9;--line:#2a3a57;--lapis:#7fb0f2;--lapis-ink:#0d1626;--warn:#ff8fa5}}
+:root[data-theme="dark"]{--bg:#0d1626;--surface:#16233a;--ink:#eef2f9;--muted:#9fb0c9;--line:#2a3a57;--lapis:#7fb0f2;--lapis-ink:#0d1626;--warn:#ff8fa5}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Noto Sans",system-ui,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:84px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+main{max-width:760px;margin:0 auto;padding:20px 16px}
+h1{font-size:1.5rem;line-height:1.2;margin:0 0 12px;font-weight:800}
+h2{font-size:1.1rem;margin:20px 0 8px}
+p{margin:0 0 12px;max-width:62ch}
+.muted{color:var(--muted)}
+section[hidden]{display:none}
+:focus-visible{outline:3px solid var(--saffron);outline-offset:2px}
+button,select,input{font:inherit;color:inherit}
+.btn{min-height:48px;padding:0 20px;border-radius:12px;border:2px solid var(--lapis);background:var(--lapis);color:var(--lapis-ink);font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--lapis)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.tile{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-height:64px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* translator */
+.stage{position:relative;background:#050a14;border-radius:16px;overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center}
+.stage video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.stage .ph{position:absolute;color:#9fb0c9;padding:16px;text-align:center}
+.subs{margin-top:12px;min-height:120px;border-radius:16px;background:var(--surface);border:2px solid var(--line);padding:16px;font-size:var(--sub);line-height:1.25;font-weight:800}
+.subs.idle{color:var(--muted);font-weight:600;font-size:1rem}
+.chip{display:inline-block;border-radius:999px;padding:4px 12px;font-size:.85rem;font-weight:600;border:1.5px solid var(--saffron);background:color-mix(in srgb,var(--saffron) 18%,transparent)}
+.meter{height:10px;border-radius:5px;background:var(--line);margin-top:6px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--lapis)}
+label{display:block;font-weight:600;margin:12px 0 6px}
+select,input[type=search]{width:100%;min-height:48px;border-radius:12px;border:2px solid var(--line);background:var(--surface);padding:0 12px}
+input[type=range]{width:100%}
+/* nav: bottom bar on phones, side rail on desktop */
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:20}
+nav a{flex:1;text-align:center;text-decoration:none;color:var(--muted);font-size:.78rem;font-weight:600;padding:8px 2px;min-height:48px;border-radius:12px}
+nav a[aria-current=page]{color:var(--lapis);background:color-mix(in srgb,var(--lapis) 12%,transparent)}
+nav .more{display:none}
+@media (min-width:900px){
+  body{padding-bottom:0;padding-left:200px}
+  nav{inset:0 auto 0 0;width:200px;flex-direction:column;justify-content:flex-start;gap:4px;border-top:0;border-right:1px solid var(--line);padding:24px 10px}
+  nav a{flex:none;text-align:left;font-size:1rem;padding:12px 14px}
+  nav .more{display:block}
+  main{padding:32px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<nav id="nav" aria-label="Main"></nav>
+<main>
+<section id="home">
+  <h1 data-i="home_t"></h1>
+  <p class="muted" data-i="home_p"></p>
+  <div class="grid">
+    <a class="tile" href="#translator" data-i="n_translator"></a>
+    <a class="tile" href="#dictionary" data-i="n_dictionary"></a>
+    <a class="tile" href="#learn" data-i="n_learn"></a>
+    <a class="tile" href="#plus" data-i="n_plus"></a>
+  </div>
+  <h2 data-i="honest_h"></h2>
+  <p data-i="honest_p"></p>
+</section>
+
+<section id="translator" hidden>
+  <h1 data-i="n_translator"></h1>
+  <div class="stage"><video id="cam" autoplay playsinline muted aria-label="Camera"></video><div class="ph" id="camph" data-i="cam_ph"></div></div>
+  <div class="row" style="margin-top:12px">
+    <button class="btn" id="camBtn" data-i="cam_start"></button>
+    <button class="btn ghost" id="pauseBtn" disabled data-i="pause"></button>
+    <span class="chip" data-i="model_off"></span>
+  </div>
+  <div class="subs idle" id="subs" role="status" aria-live="polite" data-i="subs_idle"></div>
+  <p class="muted" style="margin-top:12px"><span data-i="conf"></span>: <b>—</b></p>
+  <div class="meter" aria-hidden="true"><i></i></div>
+  <p class="muted" style="margin-top:12px" data-i="priv"></p>
+</section>
+
+<section id="history" hidden><h1 data-i="n_history"></h1><div class="panel" data-i="hist_empty"></div></section>
+
+<section id="dictionary" hidden>
+  <h1 data-i="n_dictionary"></h1>
+  <input type="search" id="q" data-ph="search" aria-label="Search">
+  <div class="panel" style="margin-top:12px" data-i="dict_empty"></div>
+  <button class="btn ghost" disabled data-i="add_sign"></button>
+  <p class="muted" style="margin-top:8px" data-i="add_sign_p"></p>
+</section>
+
+<section id="learn" hidden><h1 data-i="n_learn"></h1><div class="panel" data-i="learn_empty"></div></section>
+
+<section id="profile" hidden>
+  <h1 data-i="n_profile"></h1>
+  <div class="panel" data-i="guest"></div>
+  <button class="btn ghost" disabled data-i="login"></button>
+  <p class="muted" style="margin-top:8px" data-i="login_p"></p>
+</section>
+
+<section id="prefs" hidden>
+  <h1 data-i="n_prefs"></h1>
+  <label for="lang" data-i="lang"></label>
+  <select id="lang"><option value="tg">Тоҷикӣ</option><option value="ru">Русский</option><option value="en">English</option></select>
+  <label for="theme" data-i="theme"></label>
+  <select id="theme"><option value="system" data-i="th_sys"></option><option value="light" data-i="th_light"></option><option value="dark" data-i="th_dark"></option></select>
+  <label for="size"><span data-i="sub_size"></span>: <b id="sizeV"></b> px</label>
+  <input type="range" id="size" min="20" max="72" step="2">
+  <label for="facing" data-i="facing"></label>
+  <select id="facing"><option value="user" data-i="f_front"></option><option value="environment" data-i="f_back"></option></select>
+  <p class="muted" style="margin-top:16px" data-i="saved_local"></p>
+</section>
+
+<section id="plus" hidden>
+  <h1 data-i="n_plus"></h1>
+  <div class="panel"><b data-i="free_h"></b><p data-i="free_p"></p></div>
+  <div class="panel"><b>Premium</b><p data-i="prem_p"></p><button class="btn" disabled data-i="soon"></button></div>
+</section>
+</main>
+
+<script>
+const T={
+ru:{n_home:"Главная",n_translator:"Переводчик",n_history:"История",n_dictionary:"Словарь",n_learn:"Обучение",n_profile:"Профиль",n_prefs:"Настройки",n_plus:"Premium",
+home_t:"Перевод жестов в субтитры",home_p:"Камера, рука, лицо и поза анализируются на вашем устройстве. Видео никуда не отправляется.",
+honest_h:"Что работает сейчас",honest_p:"Интерфейс и камера готовы. Распознавание подключим после обучения модели на проверенном датасете, до этого переводчик ничего не «переводит».",
+cam_ph:"Нажмите «Включить камеру»",cam_start:"Включить камеру",cam_stop:"Выключить камеру",pause:"Пауза",resume:"Продолжить",
+model_off:"Модель не подключена",subs_idle:"Субтитры появятся здесь. Если жест неизвестен, вы увидите «Жест не распознан», а не случайное слово.",
+conf:"Уверенность",priv:"Видео обрабатывается на устройстве и не сохраняется.",
+hist_empty:"История пуста. Переводы сохраняются как текст, без видео, и только если вы вошли в аккаунт.",
+search:"Поиск жеста",dict_empty:"Словарь пуст. Жесты появятся после проверки и обучения модели.",add_sign:"Добавить жест",add_sign_p:"Станет доступно после входа в аккаунт и подключения сервера.",
+learn_empty:"Раздел появится, когда в словаре будут проверенные жесты.",guest:"Вы не вошли в аккаунт.",login:"Войти",login_p:"Вход и регистрация подключаются на этапе «Backend».",
+lang:"Язык интерфейса",theme:"Тема",th_sys:"Как в системе",th_light:"Светлая",th_dark:"Тёмная",sub_size:"Размер субтитров",facing:"Камера",f_front:"Фронтальная",f_back:"Основная",saved_local:"Настройки хранятся только на этом устройстве.",
+free_h:"Бесплатно",free_p:"Основной перевод всегда бесплатен.",prem_p:"Расширенная история, экспорт, дополнительные настройки. Цена пока не определена.",soon:"Скоро",
+err_cam:"Не удалось включить камеру. Разрешите доступ в настройках браузера."},
+tg:{n_home:"Асосӣ",n_translator:"Тарҷумон",n_history:"Таърих",n_dictionary:"Луғат",n_learn:"Омӯзиш",n_profile:"Профил",n_prefs:"Танзимот",n_plus:"Premium",
+home_t:"Тарҷумаи имову ишора ба субтитр",home_p:"Даст, чеҳра ва вазъи бадан дар дастгоҳи шумо таҳлил мешавад. Видео ба ҷое фиристода намешавад.",
+honest_h:"Ҳоло чӣ кор мекунад",honest_p:"Интерфейс ва камера омодаанд. Шинохтан пас аз омӯзиши модел бо датасети санҷидашуда пайваст мешавад. То он вақт тарҷумон чизеро тарҷума намекунад.",
+cam_ph:"Тугмаи «Фаъол кардани камера»-ро пахш кунед",cam_start:"Фаъол кардани камера",cam_stop:"Хомӯш кардани камера",pause:"Таваққуф",resume:"Давом",
+model_off:"Модел пайваст нашудааст",subs_idle:"Субтитрҳо дар ин ҷо пайдо мешаванд. Агар ишора номаълум бошад, «Ишора шинохта нашуд» нишон дода мешавад.",
+conf:"Эътимод",priv:"Видео дар дастгоҳ коркард мешавад ва нигоҳ дошта намешавад.",
+hist_empty:"Таърих холӣ аст. Тарҷумаҳо ҳамчун матн, бе видео, ва танҳо пас аз ворид шудан нигоҳ дошта мешаванд.",
+search:"Ҷустуҷӯи ишора",dict_empty:"Луғат холӣ аст. Ишораҳо пас аз санҷиш ва омӯзиши модел пайдо мешаванд.",add_sign:"Илова кардани ишора",add_sign_p:"Пас аз ворид шудан ва пайваст кардани сервер дастрас мешавад.",
+learn_empty:"Ин бахш пас аз пайдо шудани ишораҳои санҷидашуда дар луғат пайдо мешавад.",guest:"Шумо ба ҳисоб ворид нашудаед.",login:"Ворид шудан",login_p:"Воридшавӣ дар марҳилаи «Backend» пайваст мешавад.",
+lang:"Забони интерфейс",theme:"Мавзӯъ",th_sys:"Мувофиқи система",th_light:"Равшан",th_dark:"Торик",sub_size:"Андозаи субтитр",facing:"Камера",f_front:"Пеш",f_back:"Асосӣ",saved_local:"Танзимот танҳо дар ҳамин дастгоҳ нигоҳ дошта мешаванд.",
+free_h:"Ройгон",free_p:"Тарҷумаи асосӣ ҳамеша ройгон аст.",prem_p:"Таърихи васеъ, содирот ва танзимоти иловагӣ. Нарх ҳоло муайян нашудааст.",soon:"Ба қарибӣ",
+err_cam:"Камера фаъол нашуд. Дар танзимоти браузер дастрасиро иҷозат диҳед."},
+en:{n_home:"Home",n_translator:"Translator",n_history:"History",n_dictionary:"Dictionary",n_learn:"Learn",n_profile:"Profile",n_prefs:"Settings",n_plus:"Premium",
+home_t:"Sign language to subtitles",home_p:"Hands, face and body are analysed on your device. Video is never sent anywhere.",
+honest_h:"What works today",honest_p:"The interface and camera are ready. Recognition will be connected after a model is trained on a verified dataset. Until then the translator does not translate anything.",
+cam_ph:"Tap “Start camera”",cam_start:"Start camera",cam_stop:"Stop camera",pause:"Pause",resume:"Resume",
+model_off:"No model connected",subs_idle:"Subtitles will appear here. If a sign is unknown you will see “Sign not recognised”, never a random word.",
+conf:"Confidence",priv:"Video is processed on your device and not stored.",
+hist_empty:"No history yet. Translations are saved as text only, without video, and only when you are signed in.",
+search:"Search signs",dict_empty:"The dictionary is empty. Signs appear after review and model training.",add_sign:"Add a sign",add_sign_p:"Available after you sign in and the server is connected.",
+learn_empty:"This section opens once the dictionary has verified signs.",guest:"You are not signed in.",login:"Sign in",login_p:"Sign-in and registration arrive in the Backend stage.",
+lang:"Interface language",theme:"Theme",th_sys:"System",th_light:"Light",th_dark:"Dark",sub_size:"Subtitle size",facing:"Camera",f_front:"Front",f_back:"Back",saved_local:"Settings are stored on this device only.",
+free_h:"Free",free_p:"Core translation is always free.",prem_p:"Extended history, export and extra settings. Price is not decided yet.",soon:"Coming soon",
+err_cam:"Could not start the camera. Allow camera access in your browser settings."}};
+const VIEWS=["home","translator","history","dictionary","learn","profile","prefs","plus"], MORE=["learn","prefs","plus"];
+const $=id=>document.getElementById(id);
+const st={lang:"tg",theme:"system",size:32,facing:"user"};
+const sget=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const sset=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+["lang","theme","size","facing"].forEach(k=>{const v=sget("st_"+k);if(v)st[k]=k==="size"?+v:v});
+let stream=null,paused=false;
+const t=k=>T[st.lang][k]||T.ru[k]||k;
+function render(){
+  document.documentElement.lang=st.lang;
+  document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t(e.dataset.i));
+  document.querySelectorAll("[data-ph]").forEach(e=>e.placeholder=t(e.dataset.ph));
+  $("nav").innerHTML=VIEWS.map(v=>`<a href="#${v}" class="${MORE.includes(v)?"more":""}" data-v="${v}">${t("n_"+v)}</a>`).join("");
+  $("camBtn").textContent=t(stream?"cam_stop":"cam_start");
+  $("pauseBtn").textContent=t(paused?"resume":"pause");
+  route();
+}
+function route(){
+  const h=(location.hash||"#home").slice(1),v=VIEWS.includes(h)?h:"home";
+  VIEWS.forEach(x=>$(x).hidden=x!==v);
+  document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  window.scrollTo(0,0);
+}
+function applyPrefs(){
+  const r=document.documentElement;
+  if(st.theme==="system")r.removeAttribute("data-theme");else r.setAttribute("data-theme",st.theme);
+  r.style.setProperty("--sub",st.size+"px");$("sizeV").textContent=st.size;
+  $("lang").value=st.lang;$("theme").value=st.theme;$("size").value=st.size;$("facing").value=st.facing;
+}
+async function toggleCam(){
+  let failed=false;
+  if(stream){stream.getTracks().forEach(x=>x.stop());stream=null;$("cam").srcObject=null;$("camph").hidden=false;$("pauseBtn").disabled=true;paused=false;}
+  else{
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:st.facing},audio:false});
+      $("cam").srcObject=stream;$("camph").hidden=true;$("pauseBtn").disabled=false;
+    }catch(e){failed=true;}
+  }
+  render();
+  if(failed){$("subs").textContent=t("err_cam");$("subs").className="subs";}
+}
+function togglePause(){
+  if(!stream)return;paused=!paused;
+  stream.getVideoTracks().forEach(x=>x.enabled=!paused);render();
+}
+$("camBtn").onclick=toggleCam;$("pauseBtn").onclick=togglePause;
+$("lang").onchange=e=>{st.lang=e.target.value;sset("st_lang",st.lang);render()};
+$("theme").onchange=e=>{st.theme=e.target.value;sset("st_theme",st.theme);applyPrefs()};
+$("size").oninput=e=>{st.size=+e.target.value;sset("st_size",st.size);applyPrefs()};
+$("facing").onchange=e=>{st.facing=e.target.value;sset("st_facing",st.facing)};
+window.addEventListener("hashchange",route);
+applyPrefs();render();
+</script>
+</body>
+</html>
