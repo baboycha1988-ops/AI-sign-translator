@@ -1,0 +1,4 @@
+# Neural model (signml/torch_model.py). Install PyTorch for your platform from pytorch.org (CPU build is enough).
+torch
+onnx>=1.16
+onnxruntime>=1.18

@@ -1,0 +1,3 @@
+# Landmark extraction from video (signml/extract.py). Also needs MediaPipe .task model files (not in git).
+opencv-python-headless>=4.9
+mediapipe>=0.10.14
